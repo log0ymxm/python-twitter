@@ -1075,26 +1075,43 @@ class Api(object):
     data = simplejson.loads(json)
     return Status.NewFromJsonDict(data)
 
-  def PostUpdate(self, text):
+  def PostUpdate(self, status, in_reply_to_status_id=None, latitude=None, longitude=None):
     '''Post a twitter status message from the authenticated user.
-
-    The twitterapi.Api instance must be authenticated.
+    
+    The twitter.Api instance must be authenticated.
 
     Args:
-      text: The message text to be posted.  Must be less than 140 characters.
-
+      status:
+        The message text to be posted.  Must be less than or equal to
+        140 characters.
+      in_reply_to_status_id:
+        The ID of an existing status that the status to be posted is
+        in reply to.  This implicitly sets the in_reply_to_user_id
+        attribute of the resulting status to the user ID of the
+        message being replied to.  Invalid/missing status IDs will be
+        ignored. [Optional]
+      latitude:
+        The latitude of the message to be posted.
+      longitude:
+        The longitude of the message to be posted.
     Returns:
-      A twitterapi.Status instance representing the message posted
+      A twitter.Status instance representing the message posted.
     '''
     if not self._username:
-      raise TwitterError("The twitterapi.Api instance must be authenticated.")
+      raise TwitterError("The twitter.Api instance must be authenticated.")
     if len(text) > 140:
       raise TwitterError("Text must be less than or equal to 140 characters.")
     url = 'http://twitter.com/statuses/update.json'
-    data = {'status': text}
+    data = {'status': status}
+    if in_reply_to_status_id:
+      data['in_reply_to_status_id'] = in_reply_to_status_id
+    # check for geo data
+    if ( (latitude != None) and (longitude != None) ):
+      data['lat'] = latitude
+      data['long'] = longitude
     json = self._FetchUrl(url, post_data=data)
     data = simplejson.loads(json)
-    return Status.NewFromJsonDict(data)
+    return Status.NewFromJsonDict(data) 
 
   def GetReplies(self):
     '''Get a sequence of status messages representing the 20 most recent
